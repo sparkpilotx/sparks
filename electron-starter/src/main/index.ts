@@ -91,6 +91,33 @@ if (!hasSingleInstanceLock) {
     }
   })
 
+  // macOS: handle file and URL opens early to avoid missing events
+  app.on('open-file', (event, path) => {
+    event.preventDefault()
+    const [existingWindow] = BaseWindow.getAllWindows()
+    if (existingWindow) {
+      existingWindow.show()
+      existingWindow.focus()
+    }
+    if (is.dev) console.warn('open-file:', path)
+  })
+  app.on('open-url', (event, url) => {
+    event.preventDefault()
+    const [existingWindow] = BaseWindow.getAllWindows()
+    if (existingWindow) {
+      existingWindow.show()
+      existingWindow.focus()
+    }
+    if (is.dev) console.warn('open-url:', url)
+  })
+
+  // Only register when we are the primary instance
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit()
+    }
+  })
+
   app
     .whenReady()
     .then(async () => {
@@ -106,9 +133,3 @@ if (!hasSingleInstanceLock) {
       console.error('app.whenReady() failed:', err)
     })
 }
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
