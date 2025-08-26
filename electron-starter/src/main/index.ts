@@ -7,6 +7,9 @@ if (is.dev) {
   app.commandLine.appendSwitch('enable-logging')
 }
 
+// Enforce OS-wide singleton instance
+const hasSingleInstanceLock = app.requestSingleInstanceLock()
+
 // Keep no global window reference; rely on Electron's window management
 
 async function createMainWindow(): Promise<BaseWindow> {
@@ -62,20 +65,36 @@ async function createMainWindow(): Promise<BaseWindow> {
 }
 
 // Prefer whenReady().then() per Electron guidance
-app
-  .whenReady()
-  .then(async () => {
-    await createMainWindow()
+if (!hasSingleInstanceLock) {
+  app.quit()
+} else {
+  // Focus existing window on secondary launches
+  app.on('second-instance', () => {
+    const [existingWindow] = BaseWindow.getAllWindows()
+    if (existingWindow) {
+      if (existingWindow.isMinimized()) existingWindow.restore()
+      existingWindow.show()
+      existingWindow.focus()
+    } else {
+      void createMainWindow()
+    }
+  })
 
-    app.on('activate', () => {
-      if (BaseWindow.getAllWindows().length === 0) {
-        void createMainWindow()
-      }
+  app
+    .whenReady()
+    .then(async () => {
+      await createMainWindow()
+
+      app.on('activate', () => {
+        if (BaseWindow.getAllWindows().length === 0) {
+          void createMainWindow()
+        }
+      })
     })
-  })
-  .catch((err) => {
-    console.error('app.whenReady() failed:', err)
-  })
+    .catch((err) => {
+      console.error('app.whenReady() failed:', err)
+    })
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
