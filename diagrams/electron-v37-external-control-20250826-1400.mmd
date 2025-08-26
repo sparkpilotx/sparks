@@ -1,0 +1,60 @@
+flowchart TD
+    subgraph "Electron v37 Multi-View Application"
+        direction LR
+
+        subgraph "Main Process (Node.js)"
+            direction TB
+            MCP[Model Context Protocol Server] -- Controls --> A[main.ts]
+            A[main.ts] --> B{BaseWindow};
+            A -- Creates & Manages --> C1[WebContentsView 1];
+            A -- Creates & Manages --> C2[WebContentsView 2];
+            A -- Creates & Manages --> C_LOG[WebContentsView Logs];
+            
+            LS[Logging Service] -- Sends Logs --> D{ipcMain};
+            A -- Accesses --> E[Native OS APIs];
+
+            B -- Contains --> C1;
+            B -- Contains --> C2;
+            B -- Contains --> C_LOG;
+        end
+
+        subgraph "Renderer Processes (Chromium)"
+            direction TB
+            subgraph "View 1"
+                F1[UI 1] -- Interacts with --> G1{ipcRenderer 1};
+                P1[preload1.ts] -- Exposes APIs --> H1[window.api1];
+                F1 -- Calls --> H1;
+            end
+            subgraph "View 2"
+                F2[UI 2] -- Interacts with --> G2{ipcRenderer 2};
+                P2[preload2.ts] -- Exposes APIs --> H2[window.api2];
+                F2 -- Calls --> H2;
+            end
+            subgraph "Log View"
+                F_LOG[Log UI] -- Receives Logs --> G_LOG{ipcRenderer Logs};
+                P_LOG[preload_logs.ts] -- Exposes APIs --> H_LOG[window.logAPI];
+                F_LOG -- Calls --> H_LOG;
+            end
+        end
+
+        D -- Forwards Logs --> G_LOG;
+        D <== IPC Channel ==> G1;
+        D <== IPC Channel ==> G2;
+    end
+
+    EXT[External Controller] -- Model Context Protocol --> MCP;
+    E --> I[User's Operating System];
+
+    classDef main fill:#D2B4DE,stroke:#4A235A,stroke-width:2px;
+    classDef renderer fill:#A9DFBF,stroke:#196F3D,stroke-width:2px;
+    classDef os fill:#AED6F1,stroke:#1B4F72,stroke-width:2px;
+    classDef window fill:#FADBD8,stroke:#78281F,stroke-width:2px;
+    classDef logview fill:#FDEBD0,stroke:#7E5109,stroke-width:2px;
+    classDef external fill:#F5CBA7,stroke:#874309,stroke-width:2px;
+
+    class A,D,E,LS,MCP main;
+    class B window;
+    class C1,C2,F1,G1,P1,H1,F2,G2,P2,H2 renderer;
+    class C_LOG,F_LOG,G_LOG,P_LOG,H_LOG logview;
+    class I os;
+    class EXT external;

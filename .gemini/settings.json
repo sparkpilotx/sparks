@@ -1,0 +1,49 @@
+{
+  "selectedAuthType": "gemini-api-key",
+  "theme": "GitHub",
+  "autoAccept": false,
+  "vimMode": false,
+  "preferredEditor": "vscode",
+  "checkpointing": {
+    "enabled": true
+  },
+  "fileFiltering": {
+    "respectGitIgnore": true,
+    "enableRecursiveFileSearch": true
+  },
+  "telemetry": {
+    "enabled": false,
+    "target": "local",
+    "otlpEndpoint": "http://localhost:4317",
+    "logPrompts": true
+  },
+  "usageStatisticsEnabled": true,
+  "includeDirectories": ["./electron-starter"],
+  "loadMemoryFromIncludeDirectories": true,
+  "chatCompression": {
+    "contextPercentageThreshold": 0.6
+  },
+  "contextFileName": [
+    "docs/index.md"
+  ],
+  "excludedProjectEnvVars": [
+    "DEBUG",
+    "DEBUG_MODE",
+    "NODE_ENV"
+  ],
+  "mcpServers": {
+    "time": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-time"
+      ],
+      "trust": true,
+      "excludeTools": ["convert_time"]
+    }
+  },
+  "allowMCPServers": [
+    "time"
+  ],
+  "toolDiscoveryCommand": ".gemini/bin/get_tools.sh",
+  "toolCallCommand": ".gemini/bin/call_tools.sh"
+}

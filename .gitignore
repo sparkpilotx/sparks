@@ -1,0 +1,44 @@
+## OS cruft
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+## IDE / Editor
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
+## Environment files
+.env
+.env.*
+!.env.example
+
+## Logs & PID files
+logs/
+*.log
+
+## TypeScript
+*.tsbuildinfo
+
+## Node
+node_modules/
+
+## Build
+dist/
+build/
+
+## uv / Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+
+## Deno
+.deno/
+vendor/

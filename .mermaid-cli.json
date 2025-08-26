@@ -1,0 +1,5 @@
+{
+  "theme": "default",
+  "backgroundColor": "transparent",
+  "puppeteerConfigFile": "mermaid-cli.puppeteer.config.cjs"
+}
