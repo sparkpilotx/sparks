@@ -1,0 +1,23 @@
+{
+  "extends": "./node_modules/@electron-toolkit/tsconfig/tsconfig.web.json",
+  "include": [
+    "src/renderer/**/*",
+    "src/main/shared/**/*",
+    "src/main/trpc/**/*",
+    "src/preload/index.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "build", "out", "docs/**", ".cursor/**", ".gemini/**"],
+  "compilerOptions": {
+    "strict": true,
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.web.tsbuildinfo",
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["src/main/shared/*"],
+      "@rshared/*": ["src/renderer/shared/*"]
+    }
+  }
+}

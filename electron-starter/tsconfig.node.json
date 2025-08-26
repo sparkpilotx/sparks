@@ -1,0 +1,19 @@
+{
+  "extends": "./node_modules/@electron-toolkit/tsconfig/tsconfig.node.json",
+  "include": ["electron.vite.config.ts", "src/main/**/*.ts", "src/preload/**/*.ts"],
+  "exclude": ["node_modules", "dist", "build", "out", "docs/**", ".cursor/**", ".gemini/**"],
+  "compilerOptions": {
+    "strict": true,
+    "composite": true,
+    "noEmit": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "types": ["electron-vite/node"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/main/*"],
+      "@shared/*": ["src/main/shared/*"]
+    }
+  }
+}

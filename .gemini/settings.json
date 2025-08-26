@@ -24,7 +24,6 @@
     "contextPercentageThreshold": 0.6
   },
   "contextFileName": [
-    "docs/index.md"
   ],
   "excludedProjectEnvVars": [
     "DEBUG",

@@ -1,0 +1,33 @@
+appId: io.ai-copilots.electron-starter
+directories:
+  buildResources: build
+asarUnpack:
+  - resources/**
+electronDownload:
+  mirror: https://github.com/electron/electron/releases/download/
+electronDist: node_modules/electron/dist
+files:
+  - out/**
+  - package.json
+  - node_modules/**
+mac:
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSCameraUsageDescription: Application requests access to the device's camera.
+    NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+    NSCameraUseContinuityCameraDeviceType: true
+  notarize: false
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  category: public.app-category.productivity
+  executableName: electron-starter
+dmg:
+  artifactName: ${name}-${version}.${ext}
+  sign: false
+npmRebuild: false
+extraResources: []
+# publish:
+#   provider: generic
+#   url: https://example.com/auto-updates

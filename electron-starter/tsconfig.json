@@ -1,0 +1,19 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.web.json"
+    }
+  ],
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["src/main/shared/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build", "out", "docs/**", ".cursor/**", ".gemini/**"]
+}

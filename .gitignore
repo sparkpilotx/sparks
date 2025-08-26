@@ -28,6 +28,7 @@ node_modules/
 ## Build
 dist/
 build/
+out/
 
 ## uv / Python
 .venv/
