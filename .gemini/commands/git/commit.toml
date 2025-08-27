@@ -1,13 +1,32 @@
-# Invoked via: /git:commit
+# Invoked via: /git:commit <optional high-level intent>
 
-description = "Generates a Git commit message based on staged changes."
+description = "Generates a Conventional Commit message from staged changes and optional user intent."
 
-# The prompt uses !{...} to execute the command and inject its output.
+# The prompt uses !{...} to execute a shell command and inject its stdout.
 prompt = """
-Please generate a Conventional Commit message based on the following git diff:
+You are an expert at writing Conventional Commits. Create a single-line commit message summarizing the staged changes.
 
+Constraints and rules:
+1) Use the Conventional Commits subject format: `<type>[optional scope]: <description>` (single line only).
+2) Choose an accurate type from: feat, fix, docs, refactor, perf, test, build, ci, chore, style, revert.
+3) Derive an optional scope from the most impacted top-level directory or package path in the diff (e.g., `electron-starter`, `renderer`, `main`, `preload`, `docs`). Omit scope if unclear.
+4) Write the description in imperative mood, concise and specific, <= 72 characters, no trailing period.
+5) Heuristics:
+   - Pure formatting/whitespace/CSS tweaks → style
+   - Dev tooling/config updates (lint, config, deps bumps) → chore or build
+   - Test changes only → test
+   - Performance optimizations → perf
+   - Code reorganization without behavior change → refactor
+6) If changes clearly indicate a breaking API change, append `!` after the type (e.g., `feat!:`). Keep output to a single subject line.
+7) If there are no meaningful changes in the diff, output a safe generic message: `chore: update project files`.
+8) If the user provides intent (below), prefer it to disambiguate type/scope/description but keep it concise.
+
+User intent (optional): "{{args}}"
+
+Staged changes (git diff --staged):
 ```diff
 !{git diff --staged}
 ```
 
+Output ONLY the final commit subject line. Do not include quotes, code fences, explanations, or additional lines.
 """
