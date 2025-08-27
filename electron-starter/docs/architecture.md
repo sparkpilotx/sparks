@@ -1,6 +1,6 @@
 ## Electron Starter Architecture
 
-Below is the current architecture diagram. The source is also saved at `docs/assets/architecture.mmd`.
+Below is the current architecture diagram. 
 
 ```mermaid
 graph TB
