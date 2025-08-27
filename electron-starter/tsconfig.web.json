@@ -10,6 +10,7 @@
   "compilerOptions": {
     "strict": true,
     "composite": true,
+    "noEmit": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.web.tsbuildinfo",
     "jsx": "react-jsx",
     "module": "ESNext",
