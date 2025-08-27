@@ -1,5 +1,9 @@
 import { contextBridge } from 'electron'
 
-const electronApi = {} as const
+const platform = process.platform
+const electronApi = {
+  platform,
+  isMac: platform === 'darwin',
+} as const
 
 contextBridge.exposeInMainWorld('electronApi', electronApi)

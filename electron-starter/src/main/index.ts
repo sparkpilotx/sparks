@@ -1,4 +1,5 @@
-import { app, BaseWindow, WebContentsView, nativeTheme } from 'electron'
+import { app, BaseWindow, WebContentsView, nativeTheme, Menu, webContents } from 'electron'
+import type { MenuItemConstructorOptions } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'node:path'
 import { dbConfigStore } from './store/db-config'
@@ -28,7 +29,26 @@ async function createMainWindow(): Promise<BaseWindow> {
     autoHideMenuBar: true,
     title: app.getName(),
     backgroundColor: initialIsDark ? '#1e1e1e' : '#ffffff',
+    // Hide native title bar completely; we'll render our own
+    titleBarStyle: 'hidden',
+    // Expose window controls overlay on Windows/Linux
+    ...(process.platform !== 'darwin'
+      ? {
+          titleBarOverlay: {
+            color: initialIsDark ? '#1e1e1e' : '#ffffff',
+            symbolColor: initialIsDark ? '#ffffff' : '#000000',
+            height: 32,
+          },
+        }
+      : {}),
   })
+
+  // Hide macOS traffic lights since we render a fully custom title bar
+  if (process.platform === 'darwin') {
+    try {
+      mainWindow.setWindowButtonVisibility(false)
+    } catch {}
+  }
 
   const preloadPath = join(import.meta.dirname, '../preload/index.cjs')
 
@@ -74,6 +94,60 @@ async function createMainWindow(): Promise<BaseWindow> {
   })
 
   return mainWindow
+}
+
+function installApplicationMenu(): void {
+  const isMac = process.platform === 'darwin'
+  const appSubmenuTemplate: MenuItemConstructorOptions[] = [
+    { role: 'about' },
+    { type: 'separator' },
+    { role: 'quit' },
+  ]
+  const viewSubmenu: MenuItemConstructorOptions[] = [
+    ...(is.dev
+      ? [
+          {
+            label: 'Reload',
+            accelerator: 'CmdOrCtrl+R',
+            click: () => {
+              const wc = webContents.getFocusedWebContents()
+              if (wc && !wc.isDestroyed()) {
+                wc.reload()
+              }
+            },
+          },
+          {
+            label: 'Toggle Developer Tools',
+            accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+            click: () => {
+              const wc = webContents.getFocusedWebContents()
+              if (wc && !wc.isDestroyed()) {
+                wc.toggleDevTools()
+              }
+            },
+          },
+        ]
+      : []),
+    { role: 'togglefullscreen' },
+  ]
+
+  const template: MenuItemConstructorOptions[] = [
+    ...(isMac
+      ? [
+          {
+            label: app.getName(),
+            submenu: appSubmenuTemplate,
+          },
+        ]
+      : []),
+    {
+      label: 'View',
+      submenu: viewSubmenu,
+    },
+  ]
+
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
 }
 
 // Prefer whenReady().then() per Electron guidance
@@ -122,6 +196,7 @@ if (!hasSingleInstanceLock) {
   app
     .whenReady()
     .then(async () => {
+      installApplicationMenu()
       // Ensure DB URL exists in userData; creates with defaults if missing
       const dbConfig = await dbConfigStore.read()
       if (is.dev) console.warn('DB URL (userData):', dbConfig.dbUrl)

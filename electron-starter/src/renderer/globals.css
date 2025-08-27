@@ -1,0 +1,61 @@
+/* Window Controls Overlay spacing (Windows/Linux) */
+:root {
+  --titlebar-height: 32px;
+  /* CSS env provided by Window Controls Overlay. Fallback to 0 when unavailable. */
+  --wco-height: env(titlebar-area-height, 0px);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  /* Push app UI below the overlay area on Windows/Linux */
+  padding-top: var(--wco-height);
+}
+
+/* Draggable / non-draggable helpers */
+.app-drag {
+  -webkit-app-region: drag;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Basic titlebar styling (custom area below overlay) */
+.titlebar {
+  height: var(--titlebar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  box-sizing: border-box;
+  gap: 8px;
+  /* Subtle background that adapts to theme */
+  background-color: Canvas;
+  color: CanvasText;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .titlebar {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.titlebar__title {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* No mac-specific padding since traffic lights are hidden */
+
+.app-shell {
+  height: calc(100% - var(--titlebar-height));
+}

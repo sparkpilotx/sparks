@@ -1,6 +1,9 @@
 declare global {
   interface Window {
-    electronApi: {}
+    electronApi: {
+      platform: NodeJS.Platform
+      isMac: boolean
+    }
   }
 }
 
