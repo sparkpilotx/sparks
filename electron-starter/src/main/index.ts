@@ -1,6 +1,7 @@
 import { app, BaseWindow, WebContentsView, nativeTheme } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'node:path'
+import { dbConfigStore } from './store/db-config'
 
 // Minimal logs only in dev
 if (is.dev) {
@@ -121,6 +122,9 @@ if (!hasSingleInstanceLock) {
   app
     .whenReady()
     .then(async () => {
+      // Ensure DB URL exists in userData; creates with defaults if missing
+      const dbConfig = await dbConfigStore.read()
+      if (is.dev) console.warn('DB URL (userData):', dbConfig.dbUrl)
       await createMainWindow()
 
       app.on('activate', () => {

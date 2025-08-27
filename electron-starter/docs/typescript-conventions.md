@@ -1,0 +1,2 @@
+- TypeScript strict; avoid `any`. Prefer Zod schemas for runtime boundaries
+- Prefer pure functions, explicit return types

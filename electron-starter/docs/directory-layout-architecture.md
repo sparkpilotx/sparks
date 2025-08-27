@@ -38,3 +38,6 @@ and ensure the code remains maintainable and scalable as the project grows.
 - `tsconfig.web.json` : renderer/web TypeScript configuration
 - `.prettierrc.json` : Prettier configuration
 - `.prettierignore` : Prettier ignore patterns
+
+## Other Conventions
+- Filenames **kebab-case**.
