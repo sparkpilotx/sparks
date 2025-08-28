@@ -1,8 +1,14 @@
-import { app, BaseWindow, WebContentsView, nativeTheme, Menu, webContents } from 'electron'
+import { app, BaseWindow, WebContentsView, nativeTheme, Menu, webContents, ipcMain } from 'electron'
 import type { MenuItemConstructorOptions } from 'electron'
+import {
+  SUPPORTED_LOCALES,
+  type LocaleCode,
+  normalizeToSupportedLocale,
+  DEFAULT_LOCALE_CODE,
+} from '@shared/locales'
+import { appConfigStore } from './store/app-config'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'node:path'
-import { dbConfigStore } from './store/db-config'
 
 // Minimal logs only in dev
 if (is.dev) {
@@ -98,6 +104,11 @@ async function createMainWindow(): Promise<BaseWindow> {
 
 function installApplicationMenu(): void {
   const isMac = process.platform === 'darwin'
+  const broadcastLocale = (lng: LocaleCode): void => {
+    for (const wc of webContents.getAllWebContents()) {
+      if (!wc.isDestroyed()) wc.send('app:set-locale', lng)
+    }
+  }
   const appSubmenuTemplate: MenuItemConstructorOptions[] = [
     { role: 'about' },
     { type: 'separator' },
@@ -143,6 +154,24 @@ function installApplicationMenu(): void {
     {
       label: 'View',
       submenu: viewSubmenu,
+    },
+    {
+      label: 'Language',
+      submenu: SUPPORTED_LOCALES.map(
+        (loc): MenuItemConstructorOptions => ({
+          label: loc.nativeLabel,
+          type: 'radio',
+          checked: false,
+          id: `lang-${loc.code}`,
+          click: () => {
+            const code = loc.code as LocaleCode
+            void (async () => {
+              await appConfigStore.update((c) => ({ ...c, locale: code }))
+              broadcastLocale(code)
+            })()
+          },
+        }),
+      ),
     },
   ]
 
@@ -197,9 +226,46 @@ if (!hasSingleInstanceLock) {
     .whenReady()
     .then(async () => {
       installApplicationMenu()
-      // Ensure DB URL exists in userData; creates with defaults if missing
-      const dbConfig = await dbConfigStore.read()
-      if (is.dev) console.warn('DB URL (userData):', dbConfig.dbUrl)
+      // Initialize app locale from persisted config or system
+      const config = await appConfigStore.read()
+      const initialLocale = normalizeToSupportedLocale(config.locale)
+      // Reflect checked menu item based on persisted locale
+      const menu = Menu.getApplicationMenu()
+      const item = menu?.getMenuItemById(`lang-${initialLocale}`)
+      if (item) item.checked = true
+      for (const wc of webContents.getAllWebContents()) {
+        if (!wc.isDestroyed()) wc.send('app:set-locale', initialLocale)
+      }
+
+      // Provide current locale to renderers on demand
+      ipcMain.handle('app:get-locale', async () => {
+        try {
+          const cfg = await appConfigStore.read()
+          return normalizeToSupportedLocale(cfg.locale)
+        } catch {
+          return DEFAULT_LOCALE_CODE
+        }
+      })
+
+      // Forward renderer-initiated locale changes: persist + broadcast
+      ipcMain.on('app:set-locale', (_event, lng: LocaleCode) => {
+        void (async () => {
+          const next = normalizeToSupportedLocale(lng)
+          await appConfigStore.update((c) => ({ ...c, locale: next }))
+          const menu2 = Menu.getApplicationMenu()
+          // Uncheck all then check selected
+          for (const loc of SUPPORTED_LOCALES) {
+            const mi = menu2?.getMenuItemById(`lang-${loc.code}`)
+            if (mi) mi.checked = loc.code === next
+          }
+          for (const wc of webContents.getAllWebContents()) {
+            if (!wc.isDestroyed()) wc.send('app:set-locale', next)
+          }
+        })()
+      })
+      // Ensure AppConfig exists in userData; creates with defaults if missing
+      const appCfg = await appConfigStore.read()
+      if (is.dev) console.warn('DB URL (userData):', appCfg.dbUrl)
       await createMainWindow()
 
       app.on('activate', () => {
