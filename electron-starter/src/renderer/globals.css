@@ -17,6 +17,52 @@ body {
   padding-top: var(--wco-height);
 }
 
+/* Typography: platform + locale specific stacks */
+.platform-darwin.locale-en-us body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, system-ui,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.platform-darwin.locale-zh-cn body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', Helvetica,
+    Arial, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.platform-other.locale-en-us body {
+  font-family:
+    Segoe UI,
+    Roboto,
+    Ubuntu,
+    Cantarell,
+    'Noto Sans',
+    system-ui,
+    Arial,
+    sans-serif;
+  text-rendering: optimizeSpeed;
+}
+
+.platform-other.locale-zh-cn body {
+  font-family:
+    Segoe UI,
+    Roboto,
+    'Microsoft YaHei UI',
+    'Noto Sans CJK SC',
+    'Noto Sans SC',
+    'Source Han Sans SC',
+    system-ui,
+    Arial,
+    sans-serif;
+  text-rendering: optimizeSpeed;
+}
+
 /* Draggable / non-draggable helpers */
 .app-drag {
   -webkit-app-region: drag;
