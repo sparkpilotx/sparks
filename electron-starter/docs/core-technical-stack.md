@@ -20,6 +20,14 @@
 - `immer@10.1.1`
 - `zod@3.25.67`
 
+## Internationalization (i18n)
+- `i18next@23.x` + `react-i18next@14.x` (renderer)
+- Single source of truth: JSON under `src/main/shared/i18n/locales/<code>/`
+  - `common.json` (renderer UI)
+  - `menu.json` (Application Menu labels, loaded in main via `import.meta.glob`)
+- Locale owned by main, persisted in `app-config.json`
+- Renderer lazy-loads bundles via `import.meta.glob` with `en-US` fallback
+
 ## Data Layer
 - `prisma@6.14.0`
 - `@prisma/client@6.14.0`
