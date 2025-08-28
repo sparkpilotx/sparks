@@ -21,7 +21,8 @@
       "@shared/*": ["src/main/shared/*"],
       "@components/*": ["src/renderer/src/components/*"],
       "@hooks/*": ["src/renderer/src/hooks/*"],
-      "@stores/*": ["src/renderer/src/stores/*"]
+      "@stores/*": ["src/renderer/src/stores/*"],
+      "@lib/*": ["src/renderer/src/lib/*"]
     }
   }
 }

@@ -1,5 +1,14 @@
 {
   "app": {
     "title": "electron-starter"
+  },
+  "toolbar": {
+    "windowActions": "Window actions"
+  },
+  "theme": {
+    "label": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   }
 }

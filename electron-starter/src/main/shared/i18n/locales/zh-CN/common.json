@@ -1,5 +1,14 @@
 {
   "app": {
     "title": "电子应用示例"
+  },
+  "toolbar": {
+    "windowActions": "窗口操作"
+  },
+  "theme": {
+    "label": "主题",
+    "system": "跟随系统",
+    "light": "浅色",
+    "dark": "深色"
   }
 }

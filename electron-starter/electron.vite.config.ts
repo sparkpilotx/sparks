@@ -91,7 +91,8 @@ export default defineConfig({
           "base-uri 'none'",
           "object-src 'none'",
           "frame-ancestors 'none'",
-          "script-src 'self' 'unsafe-eval'",
+          // Allow inline scripts for Vite React preamble in dev
+          "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:",
           "style-src 'self' 'unsafe-inline'",
           "img-src 'self' data: blob:",
           "font-src 'self' data:",
@@ -123,12 +124,23 @@ export default defineConfig({
         '@components': resolve('src/renderer/src/components'),
         '@hooks': resolve('src/renderer/src/hooks'),
         '@stores': resolve('src/renderer/src/stores'),
+        '@lib': resolve('src/renderer/src/lib'),
       },
     },
 
     plugins: [
       // React Fast Refresh for development
       react(),
+      // Strip CSP <meta> in development so header CSP (with inline allowed) applies cleanly
+      {
+        name: 'renderer:strip-dev-csp-meta',
+        apply: 'serve',
+        transformIndexHtml(html) {
+          return html
+            .replace(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*>\s*/gi, '')
+            .replace(/<meta[^>]+http-equiv=["']X-Content-Security-Policy["'][^>]*>\s*/gi, '')
+        },
+      },
       // TailwindCSS with JIT compilation
       tailwindcss(),
     ],

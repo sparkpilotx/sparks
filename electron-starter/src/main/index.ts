@@ -7,14 +7,19 @@ import {
   DEFAULT_LOCALE_CODE,
 } from '@shared/locales'
 import { loadMenuBundle } from './i18n/menu-loader'
-import { appConfigStore } from './store/app-config'
+import { appConfigStore, type ThemePreference } from './store/app-config'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'node:path'
 
 // Minimal logs only in dev
 if (is.dev) {
-  app.commandLine.appendSwitch('enable-logging')
+  // Reduce Chromium log noise in terminal; keep only errors
+  app.commandLine.appendSwitch('log-level', 'error')
+  // Silence Electron security warning in development only
+  process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 }
+
+const openDevToolsOnStartup = process.env.OPEN_DEVTOOLS === 'true'
 
 // Enforce OS-wide singleton instance
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
@@ -26,6 +31,10 @@ async function createMainWindow(): Promise<BaseWindow> {
   const ASPECT_RATIO = 16 / 9
   const INITIAL_HEIGHT = Math.round(INITIAL_WIDTH / ASPECT_RATIO)
 
+  // Apply initial theme from config
+  const appCfg = await appConfigStore.read()
+  const pref: ThemePreference = appCfg.theme
+  nativeTheme.themeSource = pref
   const initialIsDark = nativeTheme.shouldUseDarkColors
   const mainWindow = new BaseWindow({
     width: INITIAL_WIDTH,
@@ -76,6 +85,13 @@ async function createMainWindow(): Promise<BaseWindow> {
   // Enforce 16:9 aspect ratio (height follows width)
   mainWindow.setAspectRatio(ASPECT_RATIO)
 
+  // Broadcast initial theme to renderer
+  view.webContents.on('did-finish-load', () => {
+    try {
+      view.webContents.send('app:set-theme', nativeTheme.shouldUseDarkColors ? 'dark' : 'light')
+    } catch {}
+  })
+
   // Load renderer then show (attach show after awaiting load to avoid race)
   const devUrl = process.env.ELECTRON_RENDERER_URL || process.env.VITE_DEV_SERVER_URL
   try {
@@ -89,7 +105,7 @@ async function createMainWindow(): Promise<BaseWindow> {
   }
   mainWindow.show()
   mainWindow.focus()
-  if (is.dev) {
+  if (is.dev && openDevToolsOnStartup) {
     try {
       view.webContents.openDevTools({ mode: 'detach' })
     } catch {}
@@ -235,8 +251,8 @@ if (!hasSingleInstanceLock) {
     .whenReady()
     .then(async () => {
       // Initialize app locale from persisted config or system
-      const config = await appConfigStore.read()
-      const initialLocale = normalizeToSupportedLocale(config.locale)
+      const appCfg = await appConfigStore.read()
+      const initialLocale = normalizeToSupportedLocale(appCfg.locale)
       await installApplicationMenu(initialLocale)
       // Reflect checked menu item based on persisted locale
       const menu = Menu.getApplicationMenu()
@@ -246,14 +262,38 @@ if (!hasSingleInstanceLock) {
         if (!wc.isDestroyed()) wc.send('app:set-locale', initialLocale)
       }
 
-      // Provide current locale to renderers on demand
+      // Provide current settings to renderers on demand
       ipcMain.handle('app:get-locale', async () => {
         try {
-          const cfg = await appConfigStore.read()
-          return normalizeToSupportedLocale(cfg.locale)
+          const appCfg = await appConfigStore.read()
+          return normalizeToSupportedLocale(appCfg.locale)
         } catch {
           return DEFAULT_LOCALE_CODE
         }
+      })
+
+      ipcMain.handle('app:get-theme', async () => {
+        try {
+          const appCfg = await appConfigStore.read()
+          return appCfg.theme
+        } catch {
+          return 'system'
+        }
+      })
+
+      // Follow OS appearance when preference is 'system'
+      nativeTheme.on('updated', () => {
+        void appConfigStore
+          .read()
+          .then(({ theme }) => {
+            if (theme === 'system') {
+              const mode = nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+              for (const wc of webContents.getAllWebContents()) {
+                if (!wc.isDestroyed()) wc.send('app:set-theme', mode)
+              }
+            }
+          })
+          .catch(() => {})
       })
 
       // Forward renderer-initiated locale changes: persist + broadcast
@@ -272,8 +312,18 @@ if (!hasSingleInstanceLock) {
           }
         })()
       })
+
+      ipcMain.on('app:set-theme', (_event, pref: ThemePreference) => {
+        void (async () => {
+          await appConfigStore.update((c) => ({ ...c, theme: pref }))
+          nativeTheme.themeSource = pref
+          for (const wc of webContents.getAllWebContents()) {
+            if (!wc.isDestroyed())
+              wc.send('app:set-theme', nativeTheme.shouldUseDarkColors ? 'dark' : 'light')
+          }
+        })()
+      })
       // Ensure AppConfig exists in userData; creates with defaults if missing
-      const appCfg = await appConfigStore.read()
       if (is.dev) console.warn('DB URL (userData):', appCfg.dbUrl)
       await createMainWindow()
 

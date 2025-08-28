@@ -16,8 +16,28 @@ const electronApi = {
     }
     throw new Error('Invalid locale received from main')
   },
-  onSetLocale: (handler: (lng: LocaleCode) => void) => {
-    ipcRenderer.on('app:set-locale', (_event, lng: LocaleCode) => handler(lng))
+  onSetLocale: (handler: (lng: LocaleCode) => void): (() => void) => {
+    const listener: (_event: unknown, lng: LocaleCode) => void = (_event, lng) => handler(lng)
+    ipcRenderer.on('app:set-locale', listener)
+    return () => {
+      ipcRenderer.removeListener('app:set-locale', listener)
+    }
+  },
+  setTheme: (pref: 'system' | 'light' | 'dark') => {
+    ipcRenderer.send('app:set-theme', pref)
+  },
+  getTheme: async (): Promise<'system' | 'light' | 'dark'> => {
+    const result = (await ipcRenderer.invoke('app:get-theme')) as unknown
+    if (result === 'system' || result === 'light' || result === 'dark') return result
+    return 'system'
+  },
+  onSetTheme: (handler: (mode: 'light' | 'dark') => void): (() => void) => {
+    const listener: (_event: unknown, mode: 'light' | 'dark') => void = (_event, mode) =>
+      handler(mode)
+    ipcRenderer.on('app:set-theme', listener)
+    return () => {
+      ipcRenderer.removeListener('app:set-theme', listener)
+    }
   },
 } as const
 

@@ -6,8 +6,11 @@ declare global {
       platform: NodeJS.Platform
       isMac: boolean
       setLocale: (lng: LocaleCode) => void
-      onSetLocale: (handler: (lng: LocaleCode) => void) => void
+      onSetLocale: (handler: (lng: LocaleCode) => void) => () => void
       getLocale: () => Promise<LocaleCode>
+      setTheme: (pref: 'system' | 'light' | 'dark') => void
+      getTheme: () => Promise<'system' | 'light' | 'dark'>
+      onSetTheme: (handler: (mode: 'light' | 'dark') => void) => () => void
     }
   }
 }

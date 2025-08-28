@@ -17,6 +17,20 @@ if (window.electronApi.isMac) {
   document.documentElement.classList.add('platform-other')
 }
 
+// Apply initial theme and subscribe to changes
+void (async () => {
+  try {
+    const pref = await window.electronApi.getTheme?.()
+    const mode = pref === 'dark' ? 'dark' : pref === 'light' ? 'light' : undefined
+    const html = document.documentElement
+    html.classList.toggle('dark', mode ? mode === 'dark' : false)
+  } catch {}
+})()
+
+window.electronApi.onSetTheme?.((mode) => {
+  document.documentElement.classList.toggle('dark', mode === 'dark')
+})
+
 void initI18n().then((i18n) => {
   const applyLangToDocument = (lng: LocaleCode): void => {
     const html = document.documentElement
