@@ -9,6 +9,7 @@ and ensure the code remains maintainable and scalable as the project grows.
 - `src/`
   - `main/` : application lifecycle & window management (Electron main process)
     - `shared/` : platform-agnostic code shared across main, preload, and renderer
+    - `i18n/` : main-only i18n helpers (e.g., menu label loader)
     - `index.ts` : entry for Electron main process
 
   - `preload/` : secure bridge between main and renderer (contextIsolation + contextBridge)
@@ -28,6 +29,9 @@ and ensure the code remains maintainable and scalable as the project grows.
       - `lib/` : renderer-side utilities (helpers, constants)
       - `services/` : API calls or IPC-based services
       - `app.tsx` : root React component
+- `src/main/shared/i18n/locales/` : single-source JSON for translations (used by main and renderer)
+  - `<code>/common.json` : renderer UI strings
+  - `<code>/menu.json` : Application Menu labels
 - `package.json` : project metadata and scripts
 - `package-lock.json` : exact dependency lockfile
 - `electron.vite.config.ts` : Vite + Electron build configuration
