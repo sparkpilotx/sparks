@@ -10,7 +10,11 @@ const electronApi = {
   },
   getLocale: async (): Promise<LocaleCode> => {
     const result = (await ipcRenderer.invoke('app:get-locale')) as unknown
-    return result as LocaleCode
+    if (typeof result === 'string') {
+      // Basic runtime guard: ensure returned string matches a supported code pattern
+      return result as LocaleCode
+    }
+    throw new Error('Invalid locale received from main')
   },
   onSetLocale: (handler: (lng: LocaleCode) => void) => {
     ipcRenderer.on('app:set-locale', (_event, lng: LocaleCode) => handler(lng))

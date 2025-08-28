@@ -15,10 +15,13 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["src/main/shared/*"],
-      "@rshared/*": ["src/renderer/shared/*"]
+      "@components/*": ["src/renderer/src/components/*"],
+      "@hooks/*": ["src/renderer/src/hooks/*"],
+      "@stores/*": ["src/renderer/src/stores/*"]
     }
   }
 }

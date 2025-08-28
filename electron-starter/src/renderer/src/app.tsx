@@ -1,4 +1,4 @@
-import TitleBar from './components/layout/title-bar'
+import TitleBar from '@components/layout/title-bar'
 
 export default function App(): React.JSX.Element {
   return (

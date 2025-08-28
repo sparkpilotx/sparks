@@ -3,7 +3,12 @@ import { createRoot } from 'react-dom/client'
 import './globals.css'
 import App from './src/app'
 import { initI18n, ensureNamespace } from './src/i18n'
-import { getAllLocaleCssClasses, getLocaleCssClass } from '@shared/locales'
+import {
+  getAllLocaleCssClasses,
+  getLocaleCssClass,
+  normalizeToSupportedLocale,
+  type LocaleCode,
+} from '@shared/locales'
 
 // Add platform class for CSS adjustments (e.g., macOS traffic lights)
 if (window.electronApi.isMac) {
@@ -13,21 +18,22 @@ if (window.electronApi.isMac) {
 }
 
 void initI18n().then((i18n) => {
-  const applyLangToDocument = (lng: string): void => {
+  const applyLangToDocument = (lng: LocaleCode): void => {
     const html = document.documentElement
     html.lang = lng
     html.classList.remove(...getAllLocaleCssClasses())
-    html.classList.add(getLocaleCssClass(lng as never))
+    html.classList.add(getLocaleCssClass(lng))
   }
 
   i18n.on('languageChanged', applyLangToDocument)
 
   // Listen to app-level locale change requests via IPC bridge
   window.electronApi.onSetLocale((lng) => {
-    if (lng !== i18n.language) {
+    const next = normalizeToSupportedLocale(lng)
+    if (next !== (i18n.language as LocaleCode)) {
       void (async () => {
-        await ensureNamespace(lng as never, 'common')
-        await i18n.changeLanguage(lng)
+        await ensureNamespace(next, 'common')
+        await i18n.changeLanguage(next)
       })()
     }
   })

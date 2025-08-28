@@ -119,6 +119,10 @@ export default defineConfig({
       alias: {
         // Shared utilities accessible across processes
         '@shared': resolve('src/main/shared'),
+        // Renderer aliases
+        '@components': resolve('src/renderer/src/components'),
+        '@hooks': resolve('src/renderer/src/hooks'),
+        '@stores': resolve('src/renderer/src/stores'),
       },
     },
 

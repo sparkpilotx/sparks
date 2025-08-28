@@ -22,13 +22,16 @@ export type LocaleCode = (typeof SUPPORTED_LOCALES)[number]['code']
 export const DEFAULT_LOCALE_CODE: LocaleCode = SUPPORTED_LOCALES[0].code
 
 export function normalizeToSupportedLocale(input: string): LocaleCode {
-  const normalized = input.toLowerCase()
-  const isTraditional =
-    normalized.includes('zh-tw') || normalized.includes('zh-hk') || normalized.includes('zh-mo')
-  const isSimplified = normalized.startsWith('zh') && !isTraditional
-  const candidate = isSimplified ? 'zh-CN' : 'en-US'
-  return (SUPPORTED_LOCALES.find((l) => l.code === candidate)?.code ||
-    DEFAULT_LOCALE_CODE) as LocaleCode
+  const normalized = input.trim()
+  // Exact match?
+  const exact = SUPPORTED_LOCALES.find((l) => l.code === normalized)?.code
+  if (exact) return exact as LocaleCode
+  // Match by base language (prefix before '-') e.g., 'en', 'zh'
+  const base = normalized.split('-')[0]
+  const byBase = SUPPORTED_LOCALES.find((l) => l.code.split('-')[0] === base)?.code
+  if (byBase) return byBase as LocaleCode
+  // Fallback to default
+  return DEFAULT_LOCALE_CODE
 }
 
 export function getLocaleCssClass(code: LocaleCode): string {

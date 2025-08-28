@@ -6,6 +6,7 @@ import {
   normalizeToSupportedLocale,
   DEFAULT_LOCALE_CODE,
 } from '@shared/locales'
+import { loadMenuBundle } from './i18n/menu-loader'
 import { appConfigStore } from './store/app-config'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'node:path'
@@ -102,13 +103,10 @@ async function createMainWindow(): Promise<BaseWindow> {
   return mainWindow
 }
 
-function installApplicationMenu(): void {
+async function installApplicationMenu(currentLocale: LocaleCode): Promise<void> {
   const isMac = process.platform === 'darwin'
-  const broadcastLocale = (lng: LocaleCode): void => {
-    for (const wc of webContents.getAllWebContents()) {
-      if (!wc.isDestroyed()) wc.send('app:set-locale', lng)
-    }
-  }
+  const L = await loadMenuBundle(currentLocale)
+  // Broadcast helper inlined at call sites to avoid unused warnings
   const appSubmenuTemplate: MenuItemConstructorOptions[] = [
     { role: 'about' },
     { type: 'separator' },
@@ -118,7 +116,7 @@ function installApplicationMenu(): void {
     ...(is.dev
       ? [
           {
-            label: 'Reload',
+            label: L.reload,
             accelerator: 'CmdOrCtrl+R',
             click: () => {
               const wc = webContents.getFocusedWebContents()
@@ -128,7 +126,7 @@ function installApplicationMenu(): void {
             },
           },
           {
-            label: 'Toggle Developer Tools',
+            label: L.toggleDevTools,
             accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
             click: () => {
               const wc = webContents.getFocusedWebContents()
@@ -139,7 +137,7 @@ function installApplicationMenu(): void {
           },
         ]
       : []),
-    { role: 'togglefullscreen' },
+    { role: 'togglefullscreen', label: L.toggleFullscreen },
   ]
 
   const template: MenuItemConstructorOptions[] = [
@@ -152,11 +150,11 @@ function installApplicationMenu(): void {
         ]
       : []),
     {
-      label: 'View',
+      label: L.view,
       submenu: viewSubmenu,
     },
     {
-      label: 'Language',
+      label: L.language,
       submenu: SUPPORTED_LOCALES.map(
         (loc): MenuItemConstructorOptions => ({
           label: loc.nativeLabel,
@@ -167,7 +165,18 @@ function installApplicationMenu(): void {
             const code = loc.code as LocaleCode
             void (async () => {
               await appConfigStore.update((c) => ({ ...c, locale: code }))
-              broadcastLocale(code)
+              // Rebuild menu with new locale labels
+              installApplicationMenu(code)
+              const m = Menu.getApplicationMenu()
+              // Update radio checked states
+              for (const l of SUPPORTED_LOCALES) {
+                const mi = m?.getMenuItemById(`lang-${l.code}`)
+                if (mi) mi.checked = l.code === code
+              }
+              // Broadcast to all renderers
+              for (const wc of webContents.getAllWebContents()) {
+                if (!wc.isDestroyed()) wc.send('app:set-locale', code)
+              }
             })()
           },
         }),
@@ -225,10 +234,10 @@ if (!hasSingleInstanceLock) {
   app
     .whenReady()
     .then(async () => {
-      installApplicationMenu()
       // Initialize app locale from persisted config or system
       const config = await appConfigStore.read()
       const initialLocale = normalizeToSupportedLocale(config.locale)
+      await installApplicationMenu(initialLocale)
       // Reflect checked menu item based on persisted locale
       const menu = Menu.getApplicationMenu()
       const item = menu?.getMenuItemById(`lang-${initialLocale}`)
@@ -252,8 +261,8 @@ if (!hasSingleInstanceLock) {
         void (async () => {
           const next = normalizeToSupportedLocale(lng)
           await appConfigStore.update((c) => ({ ...c, locale: next }))
+          await installApplicationMenu(next)
           const menu2 = Menu.getApplicationMenu()
-          // Uncheck all then check selected
           for (const loc of SUPPORTED_LOCALES) {
             const mi = menu2?.getMenuItemById(`lang-${loc.code}`)
             if (mi) mi.checked = loc.code === next
