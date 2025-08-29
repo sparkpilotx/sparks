@@ -12,7 +12,7 @@ function createIpcLink(): TRPCLink<AppRouter> {
           const key = `sub-${Math.random().toString(36).slice(2)}`
           const off = window.electronApi.trpcSubscribe(key, path, input, {
             onData: (data) => observer.next?.({ result: { type: 'data', data } }),
-            onError: (e) => observer.error?.((e as unknown) as never),
+            onError: (e) => observer.error?.(e as unknown as never),
             onComplete: () => observer.complete?.(),
           })
           return () => off()
@@ -23,7 +23,7 @@ function createIpcLink(): TRPCLink<AppRouter> {
             observer.next?.({ result: { type: 'data', data } })
             observer.complete?.()
           } catch (e) {
-            observer.error?.((e as unknown) as never)
+            observer.error?.(e as unknown as never)
           }
         })()
         return () => {}

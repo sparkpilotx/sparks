@@ -1,4 +1,4 @@
-import { router, procedure } from '../router'
+import { router, procedure } from '../base'
 import { z } from 'zod'
 
 export const exampleRouter = router({
@@ -13,5 +13,3 @@ export const exampleRouter = router({
     }
   }),
 })
-
-

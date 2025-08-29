@@ -1,7 +1,5 @@
-import { router, procedure } from '../router'
+import { router, procedure } from '../base'
 
 export const healthRouter = router({
   ping: procedure.query(() => 'pong'),
 })
-
-

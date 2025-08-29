@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { trpcClient } from '@lib/trpc'
 
-export default function TrpcDemo(): React.JSX.Element {
+export default function TrpcExample(): React.JSX.Element {
   const { data: ping } = useQuery({
     queryKey: ['health.ping'],
     queryFn: () => trpcClient.health.ping.query(),
@@ -21,7 +21,6 @@ export default function TrpcDemo(): React.JSX.Element {
   const unsubRef = useRef<null | (() => void)>(null)
   const startSub = (): void => {
     if (unsubRef.current) return
-    // Use typed subscription via proxy client
     const sub = trpcClient.example.ticks.subscribe(undefined, {
       onData: (v) => {
         if (typeof v === 'number') setTick(v)
@@ -32,7 +31,7 @@ export default function TrpcDemo(): React.JSX.Element {
       onComplete: () => {
         unsubRef.current = null
       },
-    } as any)
+    })
     unsubRef.current = () => sub.unsubscribe()
   }
   const stopSub = (): void => {
@@ -64,5 +63,3 @@ export default function TrpcDemo(): React.JSX.Element {
     </div>
   )
 }
-
-
