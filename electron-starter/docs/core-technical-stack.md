@@ -32,6 +32,12 @@
 - `prisma@6.14.0`
 - `@prisma/client@6.14.0`
 
+## RPC & Data Fetching
+- `@trpc/server@11.5.0`
+- `@trpc/client@11.5.0`
+- `@trpc/tanstack-react-query@11.5.0`
+- `superjson@2.2.2`
+
 ## Build & Dev Tooling
 - `vite@7.1.3`
 - `electron-vite@4.0.0`

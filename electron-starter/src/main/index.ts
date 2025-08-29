@@ -1,4 +1,6 @@
 import { app, BaseWindow, WebContentsView, nativeTheme, Menu, webContents, ipcMain } from 'electron'
+import { isObservable, observableToAsyncIterable } from '@trpc/server/observable'
+import { appRouter } from './trpc/router'
 import type { MenuItemConstructorOptions } from 'electron'
 import {
   SUPPORTED_LOCALES,
@@ -278,6 +280,188 @@ if (!hasSingleInstanceLock) {
           return appCfg.theme
         } catch {
           return 'system'
+        }
+      })
+
+      // tRPC over IPC: route through resolveHTTPResponse to reuse internals
+      ipcMain.handle(
+        'trpc:invoke',
+        async (
+          _event,
+          req: {
+            path: string
+            type: 'query' | 'mutation'
+            input: unknown
+          },
+        ) => {
+          try {
+            const caller = appRouter.createCaller({})
+            const getProp = (target: unknown, key: string): unknown => {
+              if (target !== null && (typeof target === 'object' || typeof target === 'function')) {
+                const rec = target as Record<string, unknown>
+                return rec[key]
+              }
+              return undefined
+            }
+            const keys = req.path.split('.')
+            let node: unknown = caller
+            for (const key of keys) {
+              const next = getProp(node, key)
+              if (typeof next === 'undefined') {
+                throw new Error(`Invalid procedure path: ${req.path}`)
+              }
+              node = next
+            }
+            if (typeof node !== 'function') throw new Error(`Invalid procedure path: ${req.path}`)
+            const invoke = node as (input: unknown) => Promise<unknown> | unknown
+            const data = await invoke(req.input)
+            return data
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error'
+            throw new Error(`tRPC IPC invoke failed for ${req.path}: ${message}`)
+          }
+        },
+      )
+
+      // Batch invoke multiple operations in a single IPC roundtrip
+      ipcMain.handle(
+        'trpc:batchInvoke',
+        async (
+          _event,
+          ops: Array<{
+            id: string
+            path: string
+            type: 'query' | 'mutation'
+            input: unknown
+          }>,
+        ) => {
+          const caller = appRouter.createCaller({})
+          const getProp = (target: unknown, key: string): unknown => {
+            if (target !== null && (typeof target === 'object' || typeof target === 'function')) {
+              const rec = target as Record<string, unknown>
+              return rec[key]
+            }
+            return undefined
+          }
+          const results: Record<string, unknown> = {}
+          for (const op of ops) {
+            try {
+              const keys = op.path.split('.')
+              let node: unknown = caller
+              for (const key of keys) {
+                const next = getProp(node, key)
+                if (typeof next === 'undefined')
+                  throw new Error(`Invalid procedure path: ${op.path}`)
+                node = next
+              }
+              if (typeof node !== 'function') throw new Error(`Invalid procedure path: ${op.path}`)
+              const invoke = node as (input: unknown) => Promise<unknown> | unknown
+              results[op.id] = await invoke(op.input)
+            } catch (err: unknown) {
+              results[op.id] = { error: err instanceof Error ? err.message : 'Unknown error' }
+            }
+          }
+          return results
+        },
+      )
+
+      // Simple subscription store for async generators
+      const subscriptionStore = new Map<string, { cancel: () => void }>()
+      ipcMain.on('trpc:subscribe', (event, req: { key: string; path: string; input: unknown }) => {
+        void (async () => {
+          const caller = appRouter.createCaller({})
+          const getProp = (target: unknown, key: string): unknown => {
+            if (target !== null && (typeof target === 'object' || typeof target === 'function')) {
+              const rec = target as Record<string, unknown>
+              return rec[key]
+            }
+            return undefined
+          }
+          try {
+            let node: unknown = caller
+            for (const part of req.path.split('.')) {
+              const next = getProp(node, part)
+              if (typeof next === 'undefined')
+                throw new Error(`Invalid procedure path: ${req.path}`)
+              node = next
+            }
+            if (typeof node !== 'function') throw new Error(`Invalid procedure path: ${req.path}`)
+            const invoke = node as (
+              input: unknown,
+            ) => AsyncIterable<unknown> | Promise<AsyncIterable<unknown>> | unknown
+            const maybe = invoke(req.input)
+            const isThenable = (v: unknown): v is Promise<unknown> =>
+              typeof v === 'object' && v !== null && 'then' in (v as object)
+            const resolvedRaw: unknown = isThenable(maybe) ? await maybe : maybe
+            let ac: AbortController | null = null
+            let iterable: AsyncIterable<unknown>
+            if (isObservable(resolvedRaw)) {
+              ac = new AbortController()
+              iterable = observableToAsyncIterable(resolvedRaw, ac.signal)
+            } else {
+              iterable = resolvedRaw as AsyncIterable<unknown>
+            }
+            const hasAsyncIter =
+              typeof (iterable as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator] ===
+              'function'
+            if (!hasAsyncIter) {
+              throw new Error('Subscription did not return an AsyncIterable or Observable')
+            }
+            const iterator = (iterable as AsyncIterable<unknown>)[Symbol.asyncIterator]()
+            let cancelled = false
+            ;(async () => {
+              try {
+                while (!cancelled) {
+                  const step: IteratorResult<unknown> = await iterator.next()
+                  const done: boolean = step.done === true
+                  const value: unknown = step.value
+                  if (done) break
+                  if (!event.sender.isDestroyed())
+                    event.sender.send('trpc:subscriptionEvent', {
+                      key: req.key,
+                      type: 'data',
+                      data: value,
+                    })
+                }
+                if (!event.sender.isDestroyed())
+                  event.sender.send('trpc:subscriptionEvent', { key: req.key, type: 'complete' })
+              } catch (error: unknown) {
+                if (!event.sender.isDestroyed())
+                  event.sender.send('trpc:subscriptionEvent', {
+                    key: req.key,
+                    type: 'error',
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                  })
+              } finally {
+                subscriptionStore.delete(req.key)
+              }
+            })().catch(() => {})
+            subscriptionStore.set(req.key, {
+              cancel: () => {
+                cancelled = true
+                try {
+                  ac?.abort()
+                } catch {}
+                void iterator.return?.()
+              },
+            })
+          } catch (err: unknown) {
+            if (!event.sender.isDestroyed())
+              event.sender.send('trpc:subscriptionEvent', {
+                key: req.key,
+                type: 'error',
+                error: err instanceof Error ? err.message : 'Unknown error',
+              })
+          }
+        })()
+      })
+
+      ipcMain.on('trpc:unsubscribe', (_event, key: string) => {
+        const sub = subscriptionStore.get(key)
+        try {
+          sub?.cancel()
+        } finally {
+          subscriptionStore.delete(key)
         }
       })
 

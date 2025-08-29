@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './globals.css'
 import App from './src/app'
 import { initI18n, ensureNamespace } from './src/i18n'
+import { queryClient } from './src/lib/trpc'
+import { QueryClientProvider } from '@tanstack/react-query'
 import {
   getAllLocaleCssClasses,
   getLocaleCssClass,
@@ -55,7 +57,9 @@ void initI18n().then((i18n) => {
   const container = document.getElementById('root')!
   createRoot(container).render(
     <StrictMode>
-      <App />
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
     </StrictMode>,
   )
 })

@@ -5,6 +5,46 @@ const platform = process.platform
 const electronApi = {
   platform,
   isMac: platform === 'darwin',
+  trpcInvoke: async (op: {
+    type: 'query' | 'mutation'
+    path: string
+    input: unknown
+  }): Promise<unknown> => {
+    const res = (await ipcRenderer.invoke('trpc:invoke', op)) as unknown
+    return res
+  },
+  trpcBatchInvoke: async (
+    ops: Array<{ id: string; type: 'query' | 'mutation'; path: string; input: unknown }>,
+  ): Promise<Record<string, unknown>> => {
+    const res = (await ipcRenderer.invoke('trpc:batchInvoke', ops)) as unknown
+    return res as Record<string, unknown>
+  },
+  trpcSubscribe: (
+    key: string,
+    path: string,
+    input: unknown,
+    handlers: {
+      onData: (v: unknown) => void
+      onError?: (e: unknown) => void
+      onComplete?: () => void
+    },
+  ): (() => void) => {
+    const listener: (
+      _event: unknown,
+      evt: { key: string; type: 'data' | 'error' | 'complete'; data?: unknown; error?: unknown },
+    ) => void = (_event, evt) => {
+      if (evt.key !== key) return
+      if (evt.type === 'data') handlers.onData(evt.data)
+      else if (evt.type === 'error') handlers.onError?.(evt.error)
+      else if (evt.type === 'complete') handlers.onComplete?.()
+    }
+    ipcRenderer.on('trpc:subscriptionEvent', listener)
+    ipcRenderer.send('trpc:subscribe', { key, path, input })
+    return () => {
+      ipcRenderer.removeListener('trpc:subscriptionEvent', listener)
+      ipcRenderer.send('trpc:unsubscribe', key)
+    }
+  },
   setLocale: (lng: LocaleCode) => {
     ipcRenderer.send('app:set-locale', lng)
   },
