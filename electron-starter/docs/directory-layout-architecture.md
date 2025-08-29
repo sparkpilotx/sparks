@@ -30,6 +30,7 @@ and ensure the code remains maintainable and scalable as the project grows.
       - `hooks/` : React hooks (custom logic like useTheme, useShortcut)
       - `store/` : state management (e.g., zustand slices, context)
       - `lib/` : renderer-side utilities (helpers, constants)
+        - `cn.ts` : className composition (clsx + tailwind-merge)
         - `trpc.ts` : QueryClient setup for data caching (tRPC used via 
         preload bridge)
       - `i18n/` : renderer i18n bootstrap (init, resources loader, types)
