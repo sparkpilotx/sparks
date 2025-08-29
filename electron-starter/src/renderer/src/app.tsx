@@ -1,17 +1,12 @@
 import TitleBar from '@components/layout/title-bar'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
+import { trpcClient } from '@lib/trpc'
 
 export default function App(): React.JSX.Element {
   const { data: ping } = useQuery({
     queryKey: ['health.ping'],
-    queryFn: async () => {
-      return (await window.electronApi.trpcInvoke({
-        type: 'query',
-        path: 'health.ping',
-        input: undefined,
-      })) as string
-    },
+    queryFn: () => trpcClient.health.ping.query(),
   })
   // Simple batch showcase
   const [batchResult, setBatchResult] = useState<Record<string, unknown> | null>(null)
