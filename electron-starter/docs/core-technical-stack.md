@@ -33,10 +33,11 @@
 - `@prisma/client@6.14.0`
 
 ## RPC & Data Fetching
-- `@trpc/server@11.5.0`
-- `@trpc/client@11.5.0`
-- `@trpc/tanstack-react-query@11.5.0`
-- `superjson@2.2.2`
+- `@trpc/server@11.5.0` (main, IPC)
+- `@trpc/client@11.5.0` (renderer, custom IPC link)
+- `@trpc/tanstack-react-query@11.5.0` (renderer integration, QueryClient only)
+- `@tanstack/react-query@5.x`
+- `superjson@2.2.2` (server transformer)
 
 ## Build & Dev Tooling
 - `vite@7.1.3`

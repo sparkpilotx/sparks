@@ -29,8 +29,9 @@ and ensure the code remains maintainable and scalable as the project grows.
       - `store/` : state management (e.g., zustand slices, context)
       - `lib/` : renderer-side utilities (helpers, constants)
       - `i18n/` : renderer i18n bootstrap (init, resources loader, types)
-      - `services/` : API calls or IPC-based services
+      - `services/` : API calls or IPC-based services (tRPC IPC client usage)
       - `app.tsx` : root React component
+  - `main/trpc/` : tRPC router and server-side procedures (invoked over IPC)
 - `package.json` : project metadata and scripts
 - `package-lock.json` : exact dependency lockfile
 - `electron.vite.config.ts` : Vite + Electron build configuration
