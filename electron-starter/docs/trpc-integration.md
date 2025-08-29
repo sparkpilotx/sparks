@@ -121,48 +121,47 @@ Also available:
 - `trpcInvoke({ type, path, input })`
 - `trpcBatchInvoke([{ id, type, path, input }, ...])`
 
-### Renderer: Usage Examples
+### Renderer: Usage Examples (typed IPC link)
 
-Health query using React Query:
+Health query with the typed proxy client and React Query:
 
 ```tsx
 import { useQuery } from '@tanstack/react-query'
+import { trpcClient } from '@lib/trpc'
 
 const { data } = useQuery({
   queryKey: ['health.ping'],
-  queryFn: async () =>
-    (await window.electronApi.trpcInvoke({ type: 'query', path: 'health.ping', input: undefined })) as string,
+  queryFn: () => trpcClient.health.ping.query(),
 })
 ```
 
-Batch call (query + mutation):
+"Batch" style example (two calls in parallel):
 
 ```ts
-const res = await window.electronApi.trpcBatchInvoke([
-  { id: 'a', type: 'query', path: 'health.ping', input: undefined },
-  { id: 'b', type: 'mutation', path: 'example.echo', input: { message: 'hello batch' } },
+const [ping, echo] = await Promise.all([
+  trpcClient.health.ping.query(),
+  trpcClient.example.echo.mutate({ message: 'hello batch' }),
 ])
-// res.a === 'pong', res.b === { echoed: 'hello batch' }
 ```
 
-Subscription (ticks):
+Subscription (ticks) with typed observer:
 
 ```ts
-const off = window.electronApi.trpcSubscribe('ticks-demo', 'example.ticks', undefined, {
+const sub = trpcClient.example.ticks.subscribe(undefined, {
   onData: (v) => console.log('tick', v),
   onError: (e) => console.error(e),
   onComplete: () => console.log('done'),
 })
 // later
-off()
+sub.unsubscribe()
 ```
 
-See a complete demo in `src/renderer/src/app.tsx`.
+See `src/renderer/src/components/examples/trpc-example.tsx` for a complete demo component.
 
 ### Serialization
 
 - SuperJSON is configured on the server (router) to preserve rich types across the boundary.
-- The client/renderer does not set a transformer (not needed for IPC link); values are sent over IPC.
+- The renderer uses a custom IPC link; no client transformer is required.
 
 ### Error Handling & Cancellation
 
