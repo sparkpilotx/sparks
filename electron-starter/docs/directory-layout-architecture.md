@@ -12,10 +12,13 @@ and ensure the code remains maintainable and scalable as the project grows.
       - `i18n/` : single-source translations (locales/<code>/*.json)
     - `i18n/` : main-only i18n helpers
     - `index.ts` : entry for Electron main process
+    - `trpc/` : tRPC router and server-side procedures (invoked over IPC)
+      - `router.ts` : `appRouter` (SuperJSON transformer, async-generator subscriptions)
+    - IPC handlers (including tRPC invoke/batch/subscribe) are registered in `index.ts`
 
   - `preload/` : secure bridge between main and renderer (contextIsolation + contextBridge)
     - `index.d.ts` : preload type definitions
-    - `index.ts` : preload script entry
+    - `index.ts` : preload script entry (exposes `trpcInvoke`, `trpcBatchInvoke`, `trpcSubscribe`)
 
   - `renderer/` : UI layer (React + Tailwind, runs in browser context)
     - `index.html` : HTML template
@@ -28,10 +31,10 @@ and ensure the code remains maintainable and scalable as the project grows.
       - `hooks/` : React hooks (custom logic like useTheme, useShortcut)
       - `store/` : state management (e.g., zustand slices, context)
       - `lib/` : renderer-side utilities (helpers, constants)
+        - `trpc.ts` : QueryClient setup for data caching (tRPC used via preload bridge)
       - `i18n/` : renderer i18n bootstrap (init, resources loader, types)
-      - `services/` : API calls or IPC-based services (tRPC IPC client usage)
+      - `services/` : API calls or IPC-based services (optional; tRPC uses preload bridge)
       - `app.tsx` : root React component
-  - `main/trpc/` : tRPC router and server-side procedures (invoked over IPC)
 - `package.json` : project metadata and scripts
 - `package-lock.json` : exact dependency lockfile
 - `electron.vite.config.ts` : Vite + Electron build configuration
